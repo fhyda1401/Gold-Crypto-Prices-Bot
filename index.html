@@ -1,141 +1,112 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>GCRY Finance Hub</title>
-
-  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-
-  <style>
-    body {
-      background:#0f172a;
-      color:white;
-      font-family:Arial;
-      margin:0;
-      padding:0;
-    }
-
-    .header {
-      padding:15px;
-      background:#020617;
-      text-align:center;
-      font-size:20px;
-    }
-
-    .container {
-      padding:10px;
-    }
-
-    .card {
-      background:#1e293b;
-      padding:15px;
-      margin:10px 0;
-      border-radius:12px;
-    }
-
-    button {
-      background:#22c55e;
-      border:none;
-      padding:10px;
-      border-radius:8px;
-      color:white;
-      margin-top:10px;
-      width:100%;
-    }
-
-    .danger {
-      background:#ef4444;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <title>Gold Crypto Pro - GCRY</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body>
+<body class="bg-black text-white">
 
-<div class="header">
-🚀 GCRY Finance Hub
+<!-- HEADER -->
+<div class="text-center p-5 text-2xl font-bold">
+  💰 Gold & Crypto Pro Dashboard
 </div>
 
-<div class="container">
+<!-- DASHBOARD -->
+<div class="grid grid-cols-2 gap-4 p-4">
 
-<div class="card">
-👤 User: <span id="user">Not logged</span>
-<button onclick="login()">Login with Pi</button>
+  <div class="bg-gray-900 p-4 rounded-xl">
+    <h2 class="text-yellow-400">Gold Price</h2>
+    <p id="gold">Loading...</p>
+  </div>
+
+  <div class="bg-gray-900 p-4 rounded-xl">
+    <h2 class="text-orange-400">Bitcoin</h2>
+    <p id="btc">Loading...</p>
+  </div>
+
+  <div class="bg-gray-900 p-4 rounded-xl">
+    <h2 class="text-green-400">Ethereum</h2>
+    <p id="eth">Loading...</p>
+  </div>
+
+  <div class="bg-gray-900 p-4 rounded-xl">
+    <h2 class="text-blue-400">GCRY Wallet</h2>
+    <p id="gcry">0 GCRY</p>
+  </div>
+
 </div>
 
-<div class="card">
-💰 Balance: <span id="balance">50</span> GCRY
-<button onclick="buy()">Buy GCRY (1 Pi)</button>
+<!-- CONVERTER -->
+<div class="p-4 bg-gray-900 m-4 rounded-xl">
+  <h2 class="text-xl mb-2">🔁 Converter</h2>
+
+  <input id="amount" class="text-black p-2 rounded w-full" placeholder="Enter USD amount">
+
+  <button onclick="convert()" class="bg-blue-600 p-2 mt-2 rounded w-full">
+    Convert to Crypto
+  </button>
+
+  <p id="result" class="mt-2"></p>
 </div>
 
-<div class="card">
-🔔 Price Alerts
-<button onclick="useFeature(1)">Activate (1 GCRY)</button>
-</div>
-
-<div class="card">
-📈 Pro Signals
-<button onclick="useFeature(5)">Unlock (5 GCRY)</button>
-</div>
-
-<div class="card">
-👥 Referral System
-<p>Invite friends and earn 2 GCRY</p>
-<button onclick="addReferral()">Simulate Invite</button>
-</div>
-
+<!-- REFERRAL + POINTS -->
+<div class="p-4 bg-gray-900 m-4 rounded-xl">
+  <h2>👥 Referral System</h2>
+  <p>Your Points: <span id="points">0</span></p>
+  <button onclick="addPoints()" class="bg-green-600 p-2 mt-2 rounded w-full">
+    Earn Points
+  </button>
 </div>
 
 <script>
+let points = 0;
+let gcryBalance = 120;
 
-let balance = 50;
+// 🔥 LOAD PRICES
+async function loadPrices() {
 
-Pi.init({ version: "2.0" });
+  // Crypto
+  let res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd");
+  let data = await res.json();
 
-async function login(){
+  document.getElementById("btc").innerText = "$ " + data.bitcoin.usd;
+  document.getElementById("eth").innerText = "$ " + data.ethereum.usd;
+
+  // Gold (fallback simple API)
   try {
-    const user = await Pi.authenticate(['username']);
-    document.getElementById("user").innerText = user.username;
-  } catch(e){
-    alert("Login failed");
+    let goldRes = await fetch("https://api.metals.live/v1/spot/gold");
+    let goldData = await goldRes.json();
+    document.getElementById("gold").innerText = "$ " + goldData[0].price;
+  } catch {
+    document.getElementById("gold").innerText = "API Error";
   }
+
+  // Wallet
+  document.getElementById("gcry").innerText = gcryBalance + " GCRY";
 }
 
-async function buy(){
-  try {
-    await Pi.createPayment({
-      amount: 1,
-      memo: "Buy 10 GCRY",
-      metadata: { type: "GCRY_PURCHASE" }
-    });
+loadPrices();
+setInterval(loadPrices, 5000);
 
-    balance += 10;
-    updateBalance();
-    alert("You received 10 GCRY ✅");
+// 🔁 CONVERT FUNCTION
+function convert() {
+  let amount = document.getElementById("amount").value;
 
-  } catch(e){
-    alert("Payment cancelled");
-  }
+  let btc = amount / 65000;
+  let eth = amount / 3500;
+
+  document.getElementById("result").innerHTML =
+    "BTC: " + btc.toFixed(6) + "<br>ETH: " + eth.toFixed(6);
 }
 
-function useFeature(cost){
-  if(balance >= cost){
-    balance -= cost;
-    updateBalance();
-    alert("Feature Activated ✅");
-  } else {
-    alert("Not enough GCRY ❌");
-  }
+// 👥 POINTS SYSTEM
+function addPoints() {
+  points += 10;
+  document.getElementById("points").innerText = points;
+  gcryBalance += 1;
 }
-
-function addReferral(){
-  balance += 2;
-  updateBalance();
-  alert("Referral reward added 🎉");
-}
-
-function updateBalance(){
-  document.getElementById("balance").innerText = balance;
-}
-
 </script>
 
 </body>
